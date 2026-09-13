@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ORIGIN - Copyright Protected Social Network</title>
+    <title id="app-title">ORIGIN - Copyright Protected Social Network</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -33,18 +33,23 @@
             opacity: 1;
             pointer-events: auto;
         }
+
+        /* Video/Image Filter Studio styles */
+        .filter-vintage { filter: sepia(0.5) contrast(1.1); }
+        .filter-cyber { filter: hue-rotate(90deg) saturate(1.5); }
+        .filter-mono { filter: grayscale(100%); }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans pb-24 select-none">
 
     <!-- Navbar -->
     <header class="sticky top-0 z-40 glass border-b border-slate-800 px-4 py-3 flex items-center justify-between shadow-2xl">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-                <i class="fa-solid fa-shield-halved text-xl text-white"></i>
+        <div class="flex items-center gap-3 cursor-pointer" onclick="location.reload()">
+            <div id="nav-logo-box" class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 overflow-hidden">
+                <i class="fa-solid fa-shield-halved text-xl text-white" id="nav-logo-icon"></i>
             </div>
             <div>
-                <h1 class="font-black text-xl tracking-wider gradient-text">ORIGIN</h1>
+                <h1 id="nav-app-name" class="font-black text-xl tracking-wider gradient-text">ORIGIN</h1>
                 <p class="text-[10px] text-cyan-400 font-mono flex items-center gap-1">
                     <i class="fa-solid fa-lock text-[8px]"></i> COPYRIGHT PROTECTED NETWORK
                 </p>
@@ -73,7 +78,7 @@
     <div id="floating-profile">
         <div id="fab-menu" class="absolute bottom-20 right-0 flex flex-col items-end space-y-2 fab-sub-menu">
             <button onclick="openPostModal()" class="flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-indigo-600 text-white px-4 py-2 rounded-full shadow-lg text-xs font-bold whitespace-nowrap">
-                <span>1. สร้างโพสต์ผลงาน</span> <i class="fa-solid fa-pen-nib"></i>
+                <span>1. สร้างโพสต์ & สตูดิโอแต่งมีเดีย</span> <i class="fa-solid fa-pen-nib"></i>
             </button>
             <button onclick="openChatModal()" class="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white px-4 py-2 rounded-full shadow-lg text-xs font-bold whitespace-nowrap">
                 <span>2. แชทเพื่อนที่ติดตาม</span> <i class="fa-solid fa-comments"></i>
@@ -82,7 +87,7 @@
                 <span>3. กระเป๋าเงิน & เติมเหรียญ</span> <i class="fa-solid fa-wallet"></i>
             </button>
             <button onclick="openProfileModal()" class="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-2 rounded-full shadow-lg text-xs font-bold whitespace-nowrap">
-                <span>4. โปรไฟล์ & ตั้งค่า</span> <i class="fa-solid fa-user-gear"></i>
+                <span>4. โปรไฟล์, ตั้งค่าชื่อ/โลโก้แอป</span> <i class="fa-solid fa-user-gear"></i>
             </button>
         </div>
 
@@ -108,15 +113,25 @@
         let currentUser = JSON.parse(localStorage.getItem('origin_user')) || null;
         let followedUsers = JSON.parse(localStorage.getItem('origin_followed')) || [];
         let allSystemUsers = [];
+        let appConfig = JSON.parse(localStorage.getItem('origin_app_config')) || { name: 'ORIGIN', logo: '' };
         let isDragging = false;
         let startX, startY, fabOpen = false;
 
         window.addEventListener('DOMContentLoaded', () => {
+            applyAppConfig();
             renderNav();
             loadPosts();
             fetchUsers();
             setupDraggableBubble();
         });
+
+        function applyAppConfig() {
+            document.getElementById('app-title').innerText = `${appConfig.name} - Copyright Protected Social Network`;
+            document.getElementById('nav-app-name').innerText = appConfig.name;
+            if (appConfig.logo) {
+                document.getElementById('nav-logo-box').innerHTML = `<img src="${appConfig.logo}" class="w-full h-full object-cover">`;
+            }
+        }
 
         async function fetchUsers() {
             try {
@@ -194,10 +209,11 @@
                 }
                 container.innerHTML = data.posts.map(post => {
                     const isFollowing = followedUsers.includes(post.user_id);
+                    let filterClass = post.filter || '';
                     return `
                     <div class="glass rounded-2xl overflow-hidden border border-slate-800 shadow-xl relative">
                         <div class="p-4 flex items-center justify-between border-b border-slate-800/50">
-                            <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-3 cursor-pointer" onclick="openUserProfileModal(${post.user_id})">
                                 <img src="${post.author_avatar}" class="w-10 h-10 rounded-full border border-cyan-500/30 object-cover">
                                 <div>
                                     <h4 class="font-bold text-slate-200 text-sm flex items-center gap-1">${post.author_name} <i class="fa-solid fa-circle-check text-cyan-400 text-xs"></i></h4>
@@ -211,14 +227,34 @@
                                 <span class="text-[10px] bg-indigo-950 text-indigo-300 border border-indigo-800 px-2 py-1 rounded-md font-mono">${post.license}</span>
                             </div>
                         </div>
-                        <div class="p-4 text-slate-300 text-sm whitespace-pre-line">${post.content}</div>
+                        
+                        <div class="p-4 text-slate-300 text-sm whitespace-pre-line relative" style="font-family: ${post.fontFamily || 'inherit'};">
+                            ${post.content}
+                            ${post.captionOverlay ? `<div class="absolute bottom-2 left-4 bg-black/60 px-2 py-1 rounded text-xs text-amber-300 font-bold backdrop-blur-sm border border-amber-500/30">${post.captionOverlay}</div>` : ''}
+                        </div>
+
                         ${post.media_url ? `
                             <div class="relative bg-black overflow-hidden flex items-center justify-center max-h-[450px]">
-                                ${post.media_type === 'video' ? `<video src="${post.media_url}" controls class="w-full max-h-[450px] object-contain"></video>` : `<img src="${post.media_url}" class="w-full object-cover">`}
+                                ${post.media_type === 'video' ? `<video src="${post.media_url}" controls class="w-full max-h-[450px] object-contain ${filterClass}"></video>` : `<img src="${post.media_url}" class="w-full object-cover ${filterClass}">`}
                                 <div class="watermark-overlay"></div>
                                 <div class="absolute bottom-2 right-2 glass px-2 py-1 rounded text-[9px] font-mono text-slate-400">HASH: ${post.hash}</div>
                             </div>
                         ` : ''}
+
+                        <!-- ส่วนจัดการเสียงเพลงประกอบ & ระบบ Remix -->
+                        ${post.audio_name ? `
+                            <div class="px-4 py-2.5 bg-slate-900/80 border-t border-slate-800/60 flex items-center justify-between text-xs">
+                                <div class="flex items-center gap-2 text-cyan-300 font-mono truncate max-w-[60%]">
+                                    <i class="fa-solid fa-music animate-bounce text-cyan-400"></i> 
+                                    <span class="truncate">${post.audio_name}</span>
+                                    <span class="text-[10px] text-slate-400">(${post.audioRemixable ? 'อนุญาตให้นำไปรีเอตได้' : 'ห้ามรีเอตลิขสิทธิ์'})</span>
+                                </div>
+                                <button onclick="remixAudio('${post.audio_name}', ${post.audioRemixable})" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-90 text-white px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> รีเอตเสียงนี้
+                                </button>
+                            </div>
+                        ` : ''}
+
                         <div class="p-3 bg-slate-900/40 border-t border-slate-800/50 flex items-center justify-between text-xs text-slate-400">
                             <button onclick="likePost(${post.id})" class="flex items-center gap-1.5 hover:text-rose-400"><i class="fa-solid fa-heart text-rose-500"></i> <span>${post.likes_count} ไลค์</span></button>
                             <button onclick="tipPost(${post.id})" class="flex items-center gap-1.5 hover:text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20"><i class="fa-solid fa-coins text-amber-400"></i> <span class="text-amber-300 font-bold">ให้เหรียญ (${post.coins_received})</span></button>
@@ -234,8 +270,8 @@
             } catch (err) { console.error(err); }
         }
 
-        // ฟังก์ชันที่ 1: โพสต์
-        function openPostModal() {
+        // 1. ฟังก์ชันสร้างโพสต์ & สตูดิโอตกแต่งมีเดีย + เสียงเพลง
+        function openPostModal(prefilledAudio = '') {
             if (fabOpen) toggleFabMenu();
             if (!currentUser) return openRegisterModal();
             const modal = document.getElementById('creator-modal');
@@ -251,11 +287,55 @@
                     </div>
                 </div>
                 <form onsubmit="submitPost(event)" class="space-y-4">
-                    <textarea id="post-text" placeholder="สร้างสรรค์ข้อความคุ้มครองลิขสิทธิ์..." class="w-full h-24 bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-cyan-500" required></textarea>
+                    <textarea id="post-text" placeholder="สร้างสรรค์ข้อความคุ้มครองลิขสิทธิ์..." class="w-full h-20 bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-cyan-500" required></textarea>
+                    
+                    <!-- สตูดิโอแต่งตัวหนังสือและเอฟเฟค -->
+                    <div class="grid grid-cols-2 gap-2 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <div>
+                            <label class="block text-[10px] text-slate-400 mb-1">ฟอนต์ตัวหนังสือ:</label>
+                            <select id="post-font" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-200">
+                                <option value="sans-serif">ค่าเริ่มต้น (Sans)</option>
+                                <option value="monospace">โค้ด (Monospace)</option>
+                                <option value="cursive">ลายมือ (Cursive)</option>
+                                <option value="serif">ซีรีฟทางการ (Serif)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-400 mb-1">ไตเติ้ล/ข้อความซ้อนภาพ:</label>
+                            <input type="text" id="post-caption-overlay" placeholder="เช่น #OriginalSong #Art" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-200">
+                        </div>
+                    </div>
+
                     <div>
                         <label class="block text-xs text-slate-400 mb-1">อัปโหลดสื่อ (ภาพหรือวิดีโอ):</label>
                         <input type="file" id="post-media" accept="image/*,video/*" class="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white">
                     </div>
+
+                    <!-- ฟิลเตอร์เอฟเฟคภาพ/วิดีโอ -->
+                    <div>
+                        <label class="block text-[10px] text-slate-400 mb-1">เอฟเฟคฟิลเตอร์มีเดีย:</label>
+                        <select id="post-filter" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs">
+                            <option value="">ไม่มีฟิลเตอร์ (Original)</option>
+                            <option value="filter-vintage">ฟิลเตอร์วินเทจ (Vintage)</option>
+                            <option value="filter-cyber">ฟิลเตอร์ไซเบอร์พังก์ (Cyberpunk)</option>
+                            <option value="filter-mono">ฟิลเตอร์ขาวดำ (Monochrome)</option>
+                        </select>
+                    </div>
+
+                    <!-- ส่วนจัดการเสียงเพลง -->
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
+                        <label class="block text-xs text-cyan-400 font-bold"><i class="fa-solid fa-music mr-1"></i> เสียงเพลง / เสียงประกอบโพสต์</label>
+                        <input type="text" id="post-audio-name" value="${prefilledAudio}" placeholder="ชื่อเพลงหรือเสียงประกอบ" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-slate-200">
+                        <div>
+                            <label class="block text-[10px] text-slate-400 mb-1">อัปโหลดไฟล์เสียง (MP3/WAV):</label>
+                            <input type="file" id="post-audio-file" accept="audio/*" class="w-full text-xs text-slate-400">
+                        </div>
+                        <div class="flex items-center gap-2 pt-1">
+                            <input type="checkbox" id="post-audio-remixable" checked class="rounded bg-slate-900 border-slate-700">
+                            <label for="post-audio-remixable" class="text-xs text-slate-300">อนุญาตให้ผู้อื่นนำเสียงนี้ไปรีเอต (Remix) ได้</label>
+                        </div>
+                    </div>
+
                     <div>
                         <label class="block text-xs text-slate-400 mb-1">ประเภทลิขสิทธิ์:</label>
                         <select id="post-license" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs">
@@ -263,9 +343,64 @@
                             <option value="CC BY-NC">อนุญาตเผยแพร่แบบอ้างอิง (ห้ามใช้เพื่อการค้า)</option>
                         </select>
                     </div>
-                    <button type="submit" class="w-full bg-gradient-to-r from-cyan-500 to-indigo-600 font-bold py-2.5 rounded-lg text-sm text-white shadow-lg"><i class="fa-solid fa-shield-cat mr-1"></i> โพสต์พร้อมประทับตราลิขสิทธิ์</button>
+                    <button type="submit" class="w-full bg-gradient-to-r from-cyan-500 to-indigo-600 font-bold py-2.5 rounded-lg text-sm text-white shadow-lg"><i class="fa-solid fa-shield-cat mr-1"></i> โพสต์ผลงานพร้อมประทับตราลิขสิทธิ์</button>
                 </form>
             `;
+        }
+
+        function remixAudio(audioName, isRemixable) {
+            if (!isRemixable) {
+                alert('⚠️ เสียงเพลงนี้ถูกตั้งค่า "ห้ามรีเอตลิขสิทธิ์" โดยเจ้าของผลงาน คุณต้องได้รับอนุญาตจากเจ้าของก่อนจึงจะนำไปใช้ได้');
+                return;
+            }
+            openPostModal(`Remix: ${audioName}`);
+        }
+
+        // 2. ระบบดูโปรไฟล์ของแต่ละคน
+        async function openUserProfileModal(userId) {
+            await fetchUsers();
+            const targetUser = allSystemUsers.find(u => u.id === userId);
+            if (!targetUser) return alert('ไม่พบข้อมูลผู้ใช้นี้');
+
+            const modal = document.getElementById('creator-modal');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+
+            try {
+                const res = await fetch('/api/posts');
+                const data = await res.json();
+                const userPosts = (data.posts || []).filter(p => p.user_id === userId);
+
+                content.innerHTML = `
+                    <div class="text-center space-y-3 pb-4 border-b border-slate-800">
+                        <img src="${targetUser.avatar}" class="w-20 h-20 mx-auto rounded-full border-2 border-cyan-400 object-cover shadow-lg">
+                        <div>
+                            <h3 class="font-bold text-lg text-slate-100 flex items-center justify-center gap-1">${targetUser.name} <i class="fa-solid fa-circle-check text-cyan-400 text-sm"></i></h3>
+                            <p class="text-xs text-cyan-400 font-mono">${targetUser.creator_id}</p>
+                        </div>
+                        <div class="flex justify-center gap-6 text-xs text-slate-400 pt-1">
+                            <div>ผลงานลิขสิทธิ์: <span class="text-white font-bold">${userPosts.length}</span> โพสต์</div>
+                            <div>เหรียญสะสม: <span class="text-amber-400 font-bold">🪙 ${targetUser.coins || 0}</span></div>
+                        </div>
+                    </div>
+                    <div class="pt-4">
+                        <h4 class="text-xs font-bold text-slate-300 mb-3 uppercase tracking-wider"><i class="fa-solid fa-photo-film mr-1"></i> ผลงานทั้งหมดของ ${targetUser.name}</h4>
+                        <div class="space-y-3 max-h-60 overflow-y-auto">
+                            ${userPosts.length === 0 ? '<div class="text-center py-6 text-slate-500 text-xs">ผู้ใช้นี้ยังไม่มีผลงานโพสต์</div>' :
+                              userPosts.map(p => `
+                                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs space-y-2">
+                                    <p class="text-slate-300">${p.content}</p>
+                                    ${p.media_url ? (p.media_type === 'video' ? `<video src="${p.media_url}" controls class="w-full max-h-32 object-contain rounded"></video>` : `<img src="${p.media_url}" class="w-full max-h-32 object-cover rounded">`) : ''}
+                                    <div class="flex justify-between text-[10px] text-slate-400 font-mono">
+                                        <span>ลิขสิทธิ์: ${p.license}</span>
+                                        <span>❤️ ${p.likes_count} ไลค์</span>
+                                    </div>
+                                </div>
+                              `).join('')}
+                        </div>
+                    </div>
+                `;
+            } catch(e) { console.error(e); }
         }
 
         // ฟังก์ชันที่ 2: แชทเพื่อนที่ติดตาม
@@ -287,7 +422,7 @@
                     ${friends.length === 0 ? '<div class="text-center py-8 text-slate-500 text-xs">ยังไม่ได้ติดตามผู้ใช้คนอื่น กดติดตามที่โพสต์เพื่อเพิ่มเพื่อนแชท</div>' :
                       friends.map(f => `
                         <div class="p-2.5 bg-slate-950 rounded-xl border border-slate-800 flex justify-between items-center hover:border-cyan-500/50 transition">
-                            <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-3 cursor-pointer" onclick="openUserProfileModal(${f.id})">
                                 <img src="${f.avatar}" class="w-10 h-10 rounded-full border border-cyan-400 object-cover">
                                 <div>
                                     <div class="font-bold text-slate-200 text-sm">${f.name}</div>
@@ -504,7 +639,7 @@
             alert(`ถอนสำเร็จ ${amount} เหรียญ เข้าบัญชี ${currentUser.bankAccount}`);
         }
 
-        // ฟังก์ชันที่ 4: โปรไฟล์ส่วนตัว
+        // 4. ฟังก์ชันโปรไฟล์ส่วนตัว & เปลี่ยนชื่อกับโลโก้แอป
         function openProfileModal() {
             if (fabOpen) toggleFabMenu();
             if (!currentUser) return openRegisterModal();
@@ -513,7 +648,7 @@
             modal.classList.remove('hidden');
 
             content.innerHTML = `
-                <h3 class="text-lg font-bold mb-3 text-cyan-400"><i class="fa-solid fa-user-gear mr-2"></i>โปรไฟล์ & ตั้งค่าส่วนตัว</h3>
+                <h3 class="text-lg font-bold mb-3 text-cyan-400"><i class="fa-solid fa-user-gear mr-2"></i>โปรไฟล์ & ตั้งค่าแอปพลิเคชัน</h3>
                 <form onsubmit="updateProfile(event)" class="space-y-3">
                     <div class="flex items-center gap-3">
                         <img src="${currentUser.avatar}" class="w-14 h-14 rounded-full border border-cyan-400 object-cover">
@@ -538,7 +673,22 @@
                         <label class="block text-[11px] text-slate-400 mb-1">เลขบัญชีธนาคาร (สำหรับรับเงินถอน):</label>
                         <input type="text" id="edit-bank" value="${currentUser.bankAccount || ''}" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs">
                     </div>
-                    <button type="submit" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 font-bold py-2.5 rounded-lg text-xs text-white shadow-lg">บันทึกข้อมูลส่วนตัว</button>
+
+                    <hr class="border-slate-800 my-2">
+                    
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
+                        <h4 class="text-xs font-bold text-cyan-300">ตั้งค่าชื่อและโลโก้แอปพลิเคชัน</h4>
+                        <div>
+                            <label class="block text-[10px] text-slate-400 mb-1">ชื่อแอป:</label>
+                            <input type="text" id="app-config-name" value="${appConfig.name}" class="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-slate-200">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-slate-400 mb-1">โลโก้แอป (อัปโหลดรูปภาพ):</label>
+                            <input type="file" id="app-config-logo-file" accept="image/*" class="w-full text-xs text-slate-400">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 font-bold py-2.5 rounded-lg text-xs text-white shadow-lg">บันทึกข้อมูลและตั้งค่าแอป</button>
                 </form>
             `;
         }
@@ -549,17 +699,27 @@
             currentUser.email = document.getElementById('edit-email').value;
             currentUser.phone = document.getElementById('edit-phone').value;
             currentUser.bankAccount = document.getElementById('edit-bank').value;
+            
             const avatarInput = document.getElementById('edit-avatar');
             if (avatarInput.files && avatarInput.files[0]) {
                 currentUser.avatar = await convertFileToBase64(avatarInput.files[0]);
             }
+
+            // บันทึกตั้งค่าชื่อและโลโก้แอป
+            appConfig.name = document.getElementById('app-config-name').value;
+            const logoFile = document.getElementById('app-config-logo-file').files[0];
+            if (logoFile) {
+                appConfig.logo = await convertFileToBase64(logoFile);
+            }
+            localStorage.setItem('origin_app_config', JSON.stringify(appConfig));
+            applyAppConfig();
+
             localStorage.setItem('origin_user', JSON.stringify(currentUser));
             renderNav();
             closeCreatorPopup();
-            alert('อัปเดตโปรไฟล์เรียบร้อย!');
+            alert('อัปเดตโปรไฟล์และค่าระบบแอปเรียบร้อย!');
         }
 
-        // หน้าต่าง สมัครสมาชิก / เข้าสู่ระบบ พร้อมแท็บสลับใช้งาน
         function openRegisterModal() {
             const modal = document.getElementById('creator-modal');
             const content = document.getElementById('modal-content');
@@ -666,7 +826,7 @@
             if (currentUser && currentUser.avatar) {
                 bubbleImg.src = currentUser.avatar;
                 nav.innerHTML = `
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 cursor-pointer" onclick="openProfileModal()">
                         <img src="${currentUser.avatar}" class="w-8 h-8 rounded-full border border-cyan-400 object-cover">
                         <div class="text-right hidden sm:block">
                             <div class="text-xs font-bold text-slate-200">${currentUser.name}</div>
@@ -687,8 +847,19 @@
             formData.append('userId', currentUser.id);
             formData.append('content', document.getElementById('post-text').value);
             formData.append('license', document.getElementById('post-license').value);
+            
+            // ส่งค่าฟีเจอร์แต่งมีเดียและเพลงไปหลังบ้าน
+            formData.append('fontFamily', document.getElementById('post-font').value);
+            formData.append('captionOverlay', document.getElementById('post-caption-overlay').value);
+            formData.append('filter', document.getElementById('post-filter').value);
+            formData.append('audioName', document.getElementById('post-audio-name').value);
+            formData.append('audioRemixable', document.getElementById('post-audio-remixable').checked);
+
             const fileInput = document.getElementById('post-media');
             if (fileInput.files[0]) formData.append('media', fileInput.files[0]);
+
+            const audioInput = document.getElementById('post-audio-file');
+            if (audioInput.files[0]) formData.append('audioFile', audioInput.files[0]);
 
             const res = await fetch('/api/posts', { method: 'POST', body: formData });
             const data = await res.json();
@@ -741,7 +912,7 @@
             const index = followedUsers.indexOf(userId);
             if (index > -1) followedUsers.splice(index, 1);
             else followedUsers.push(userId);
-            localStorage.setItem('origin_followed', JSON.stringify(followedUsers));
+,            localStorage.setItem('origin_followed', JSON.stringify(followedUsers));
             loadPosts();
             alert('อัปเดตการติดตามเรียบร้อย');
         }
