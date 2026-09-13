@@ -559,7 +559,7 @@
             alert('อัปเดตโปรไฟล์เรียบร้อย!');
         }
 
-        // ปรับปรุงหน้าต่าง สมัครสมาชิก / เข้าสู่ระบบ ให้มีแท็บสลับใช้งาน
+        // หน้าต่าง สมัครสมาชิก / เข้าสู่ระบบ พร้อมแท็บสลับใช้งาน
         function openRegisterModal() {
             const modal = document.getElementById('creator-modal');
             const content = document.getElementById('modal-content');
@@ -614,7 +614,7 @@
             const username = document.getElementById('login-username').value.trim();
             if (!username) return alert('กรุณากรอก Username');
             await fetchUsers();
-            const found = allSystemUsers.find(u => u.username === username);
+            const found = allSystemUsers.find(u => u.username.toLowerCase() === username.toLowerCase());
             if (found) {
                 currentUser = found;
                 localStorage.setItem('origin_user', JSON.stringify(currentUser));
