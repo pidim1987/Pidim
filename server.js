@@ -61,6 +61,21 @@ app.post('/api/register', (req, res) => {
     res.json({ success: true, message: 'สมัครสมาชิกสำเร็จ!', user: newUser });
 });
 
+// API: เข้าสู่ระบบด้วย Username (เพิ่มเข้ามาใหม่)
+app.post('/api/login', (req, res) => {
+    const { username } = req.body;
+    if (!username) {
+        return res.status(400).json({ error: 'กรุณากรอก Username' });
+    }
+
+    const user = users.find(u => u.username.toLowerCase() === username.trim().toLowerCase());
+    if (!user) {
+        return res.status(404).json({ error: 'ไม่พบ Username นี้ในระบบ' });
+    }
+
+    res.json({ success: true, message: 'เข้าสู่ระบบสำเร็จ!', user });
+});
+
 // API: ดึงรายชื่อผู้ใช้ทั้งหมด (สำหรับเช็คชื่อเพื่อนในแชท)
 app.get('/api/users', (req, res) => {
     res.json({ users });
