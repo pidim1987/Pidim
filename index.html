@@ -912,7 +912,8 @@
             const index = followedUsers.indexOf(userId);
             if (index > -1) followedUsers.splice(index, 1);
             else followedUsers.push(userId);
-,            localStorage.setItem('origin_followed', JSON.stringify(followedUsers));
+            
+            localStorage.setItem('origin_followed', JSON.stringify(followedUsers));
             loadPosts();
             alert('อัปเดตการติดตามเรียบร้อย');
         }
