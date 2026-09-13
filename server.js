@@ -61,7 +61,7 @@ app.post('/api/register', (req, res) => {
     res.json({ success: true, message: 'สมัครสมาชิกสำเร็จ!', user: newUser });
 });
 
-// API: เข้าสู่ระบบด้วย Username (เพิ่มเข้ามาใหม่)
+// API: เข้าสู่ระบบด้วย Username
 app.post('/api/login', (req, res) => {
     const { username } = req.body;
     if (!username) {
@@ -76,7 +76,7 @@ app.post('/api/login', (req, res) => {
     res.json({ success: true, message: 'เข้าสู่ระบบสำเร็จ!', user });
 });
 
-// API: ดึงรายชื่อผู้ใช้ทั้งหมด (สำหรับเช็คชื่อเพื่อนในแชท)
+// API: ดึงรายชื่อผู้ใช้ทั้งหมด
 app.get('/api/users', (req, res) => {
     res.json({ users });
 });
@@ -136,21 +136,22 @@ app.post('/api/chat', upload.single('media'), (req, res) => {
     res.json({ success: true, chat: newChat });
 });
 
-// API: โพสต์
+// API: โพสต์ (อัปเดตให้รองรับฟอนต์, ฟิลเตอร์, และเสียงเพลงประกอบ)
 app.get('/api/posts', (req, res) => {
     res.json({ posts: posts.slice().reverse() });
 });
 
-app.post('/api/posts', upload.single('media'), (req, res) => {
-    const { userId, content, license } = req.body;
+app.post('/api/posts', upload.fields([{ name: 'media', maxCount: 1 }, { name: 'audioFile', maxCount: 1 }]), (req, res) => {
+    const { userId, content, license, fontFamily, captionOverlay, filter, audioName, audioRemixable } = req.body;
     const user = users.find(u => u.id === parseInt(userId));
     if (!user) return res.status(400).json({ error: 'ไม่พบผู้ใช้งาน' });
 
     let mediaUrl = null;
     let mediaType = null;
-    if (req.file) {
-        mediaUrl = `/uploads/${req.file.filename}`;
-        mediaType = req.file.mimetype.startsWith('video/') ? 'video' : 'image';
+    if (req.files && req.files['media']) {
+        const file = req.files['media'][0];
+        mediaUrl = `/uploads/${file.filename}`;
+        mediaType = file.mimetype.startsWith('video/') ? 'video' : 'image';
     }
 
     const hash = crypto.createHash('sha256').update(content + Date.now()).digest('hex').substring(0, 16).toUpperCase();
@@ -164,6 +165,11 @@ app.post('/api/posts', upload.single('media'), (req, res) => {
         license,
         media_url: mediaUrl,
         media_type: mediaType,
+        fontFamily: fontFamily || 'sans-serif',
+        captionOverlay: captionOverlay || '',
+        filter: filter || '',
+        audio_name: audioName || '',
+        audioRemixable: audioRemixable === 'true' || audioRemixable === true,
         hash,
         likes_count: 0,
         coins_received: 0,
