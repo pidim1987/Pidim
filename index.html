@@ -268,7 +268,7 @@
             `;
         }
 
-        // ฟังก์ชันที่ 2: แชทเพื่อนที่ติดตาม (พร้อมรายชื่อ, รูปโปรไฟล์, แชทข้อความ/เสียง/รูป/วิดีโอ และปุ่มโทร/กล้อง)
+        // ฟังก์ชันที่ 2: แชทเพื่อนที่ติดตาม
         async function openChatModal() {
             if (fabOpen) toggleFabMenu();
             if (!currentUser) return openRegisterModal();
@@ -305,8 +305,6 @@
 
         async function openChatRoom(friendId, friendName, friendAvatar) {
             const content = document.getElementById('modal-content');
-            
-            // ดึงข้อความแชทเก่า
             let chatMessages = [];
             try {
                 const res = await fetch(`/api/chat/${currentUser.id}/${friendId}`);
@@ -431,7 +429,7 @@
             openChatRoom(friendId, '', '');
         }
 
-        // ฟังก์ชันที่ 3: กระเป๋าเงิน & เถิมเงิน/ถอนเงิน
+        // ฟังก์ชันที่ 3: กระเป๋าเงิน
         function openWalletModal() {
             if (fabOpen) toggleFabMenu();
             if (!currentUser) return openRegisterModal();
@@ -561,20 +559,71 @@
             alert('อัปเดตโปรไฟล์เรียบร้อย!');
         }
 
+        // ปรับปรุงหน้าต่าง สมัครสมาชิก / เข้าสู่ระบบ ให้มีแท็บสลับใช้งาน
         function openRegisterModal() {
             const modal = document.getElementById('creator-modal');
             const content = document.getElementById('modal-content');
             modal.classList.remove('hidden');
 
             content.innerHTML = `
-                <h3 class="text-xl font-bold mb-2 text-cyan-400">สมัครสมาชิก / เข้าสู่ระบบ</h3>
-                <div class="space-y-3">
-                    <div><label class="block text-xs text-slate-400 mb-1">ชื่อ - นามสกุล:</label><input type="text" id="reg-name" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm"></div>
-                    <div><label class="block text-xs text-slate-400 mb-1">Username:</label><input type="text" id="reg-username" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm"></div>
-                    <div><label class="block text-xs text-slate-400 mb-1">รูปโปรไฟล์:</label><input type="file" id="reg-avatar" accept="image/*" class="w-full text-xs text-slate-400 file:bg-indigo-600 file:text-white file:border-0 file:py-1 file:px-3 file:rounded"></div>
-                    <button onclick="register()" class="w-full bg-gradient-to-r from-cyan-500 to-indigo-600 font-bold py-2.5 rounded-lg text-sm text-white shadow-lg">ยืนยันสมัครสมาชิก</button>
+                <div class="flex border-b border-slate-800 mb-4">
+                    <button onclick="switchAuthTab('register')" id="tab-reg-btn" class="flex-1 pb-2 font-bold text-sm text-cyan-400 border-b-2 border-cyan-400">สมัครสมาชิกใหม่</button>
+                    <button onclick="switchAuthTab('login')" id="tab-login-btn" class="flex-1 pb-2 font-bold text-sm text-slate-400">เข้าสู่ระบบเดิม</button>
+                </div>
+                
+                <div id="auth-form-container">
+                    <div class="space-y-3">
+                        <div><label class="block text-xs text-slate-400 mb-1">ชื่อ - นามสกุล:</label><input type="text" id="reg-name" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm"></div>
+                        <div><label class="block text-xs text-slate-400 mb-1">Username:</label><input type="text" id="reg-username" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm"></div>
+                        <div><label class="block text-xs text-slate-400 mb-1">รูปโปรไฟล์:</label><input type="file" id="reg-avatar" accept="image/*" class="w-full text-xs text-slate-400 file:bg-indigo-600 file:text-white file:border-0 file:py-1 file:px-3 file:rounded"></div>
+                        <button onclick="register()" class="w-full bg-gradient-to-r from-cyan-500 to-indigo-600 font-bold py-2.5 rounded-lg text-sm text-white shadow-lg">ยืนยันสมัครสมาชิก</button>
+                    </div>
                 </div>
             `;
+        }
+
+        function switchAuthTab(type) {
+            const container = document.getElementById('auth-form-container');
+            const regBtn = document.getElementById('tab-reg-btn');
+            const loginBtn = document.getElementById('tab-login-btn');
+
+            if (type === 'register') {
+                regBtn.className = "flex-1 pb-2 font-bold text-sm text-cyan-400 border-b-2 border-cyan-400";
+                loginBtn.className = "flex-1 pb-2 font-bold text-sm text-slate-400";
+                container.innerHTML = `
+                    <div class="space-y-3">
+                        <div><label class="block text-xs text-slate-400 mb-1">ชื่อ - นามสกุล:</label><input type="text" id="reg-name" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm"></div>
+                        <div><label class="block text-xs text-slate-400 mb-1">Username:</label><input type="text" id="reg-username" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm"></div>
+                        <div><label class="block text-xs text-slate-400 mb-1">รูปโปรไฟล์:</label><input type="file" id="reg-avatar" accept="image/*" class="w-full text-xs text-slate-400 file:bg-indigo-600 file:text-white file:border-0 file:py-1 file:px-3 file:rounded"></div>
+                        <button onclick="register()" class="w-full bg-gradient-to-r from-cyan-500 to-indigo-600 font-bold py-2.5 rounded-lg text-sm text-white shadow-lg">ยืนยันสมัครสมาชิก</button>
+                    </div>
+                `;
+            } else {
+                loginBtn.className = "flex-1 pb-2 font-bold text-sm text-cyan-400 border-b-2 border-cyan-400";
+                regBtn.className = "flex-1 pb-2 font-bold text-sm text-slate-400";
+                container.innerHTML = `
+                    <div class="space-y-3">
+                        <div><label class="block text-xs text-slate-400 mb-1">กรอก Username เดิมของคุณ:</label><input type="text" id="login-username" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm" placeholder="Username ที่เคยสมัครไว้"></div>
+                        <button onclick="loginWithUsername()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 font-bold py-2.5 rounded-lg text-sm text-white shadow-lg">เข้าสู่ระบบ</button>
+                    </div>
+                `;
+            }
+        }
+
+        async function loginWithUsername() {
+            const username = document.getElementById('login-username').value.trim();
+            if (!username) return alert('กรุณากรอก Username');
+            await fetchUsers();
+            const found = allSystemUsers.find(u => u.username === username);
+            if (found) {
+                currentUser = found;
+                localStorage.setItem('origin_user', JSON.stringify(currentUser));
+                renderNav();
+                closeCreatorPopup();
+                alert('เข้าสู่ระบบสำเร็จ ยินดีต้อนรับคุณ ' + currentUser.name);
+            } else {
+                alert('ไม่พบ Username นี้ในระบบ กรุณาตรวจสอบอีกครั้งหรือสมัครสมาชิกใหม่');
+            }
         }
 
         async function register() {
@@ -628,7 +677,7 @@
                 `;
             } else {
                 bubbleImg.src = 'https://api.dicebear.com/7.x/bottts/svg?seed=guest';
-                nav.innerHTML = `<button onclick="openRegisterModal()" class="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-bold">สมัครสมาชิก</button>`;
+                nav.innerHTML = `<button onclick="openRegisterModal()" class="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-bold">สมัคร / เข้าสู่ระบบ</button>`;
             }
         }
 
