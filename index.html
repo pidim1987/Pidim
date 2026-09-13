@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORIGIN - Copyright Protected Social Network</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .glass { background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .gradient-text { background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .watermark-overlay { position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(45deg, rgba(255,255,255,0.03), rgba(255,255,255,0.03) 15px, transparent 15px, transparent 30px); }
+        
+        #floating-profile {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 9999;
+            touch-action: none;
+            cursor: grab;
+            user-select: none;
+        }
+        #floating-profile:active { cursor: grabbing; }
+
+        .fab-sub-menu {
+            transform: scale(0);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            pointer-events: none;
+        }
+        .fab-sub-menu.active {
+            transform: scale(1);
+            opacity: 1;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans pb-24 select-none">
+
+    <!-- Navbar -->
+    <header class="sticky top-0 z-40 glass border-b border-slate-800 px-4 py-3 flex items-center justify-between shadow-2xl">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                <i class="fa-solid fa-shield-halved text-xl text-white"></i>
+            </div>
+            <div>
+                <h1 class="font-black text-xl tracking-wider gradient-text">ORIGIN</h1>
+                <p class="text-[10px] text-cyan-400 font-mono flex items-center gap-1">
+                    <i class="fa-solid fa-lock text-[8px]"></i> COPYRIGHT PROTECTED NETWORK
+                </p>
+            </div>
+        </div>
+        <div id="nav-user-area" class="flex items-center gap-3"></div>
+    </header>
+
+    <!-- Main Feed -->
+    <main class="max-w-2xl mx-auto px-4 pt-6 space-y-6">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h2 class="text-lg font-bold text-slate-200 flex items-center gap-2">
+                <i class="fa-solid fa-border-all text-cyan-400"></i> ฟีดผลงานต้นฉบับล่าสุด
+            </h2>
+            <span class="text-xs text-slate-400 bg-slate-800 px-2.5 py-1 rounded-full border border-slate-700">สาธารณะ</span>
+        </div>
+        <div id="posts-feed" class="space-y-6">
+            <div class="text-center py-12 text-slate-500">
+                <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i>
+                <p>กำลังโหลดผลงานลิขสิทธิ์...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Floating Action Button (FAB) -->
+    <div id="floating-profile">
+        <div id="fab-menu" class="absolute bottom-20 right-0 flex flex-col items-end space-y-2 fab-sub-menu">
+            <button onclick="openPostModal()" class="flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-indigo-600 text-white px-4 py-2 rounded-full shadow-lg text-xs font-bold whitespace-nowrap">
+                <span>1. สร้างโพสต์ผลงาน</span> <i class="fa-solid fa-pen-nib"></i>
+            </button>
+            <button onclick="openChatModal()" class="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white px-4 py-2 rounded-full shadow-lg text-xs font-bold whitespace-nowrap">
+                <span>2. แชทเพื่อนที่ติดตาม</span> <i class="fa-solid fa-comments"></i>
+            </button>
+            <button onclick="openWalletModal()" class="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white px-4 py-2 rounded-full shadow-lg text-xs font-bold whitespace-nowrap">
+                <span>3. กระเป๋าเงิน & เติมเหรียญ</span> <i class="fa-solid fa-wallet"></i>
+            </button>
+            <button onclick="openProfileModal()" class="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-2 rounded-full shadow-lg text-xs font-bold whitespace-nowrap">
+                <span>4. โปรไฟล์ & ตั้งค่า</span> <i class="fa-solid fa-user-gear"></i>
+            </button>
+        </div>
+
+        <div id="bubble-btn" class="w-16 h-16 rounded-full bg-slate-900 border-2 border-cyan-400 p-0.5 shadow-2xl relative transition-transform hover:scale-105 active:scale-95 flex items-center justify-center overflow-hidden cursor-pointer">
+            <img id="bubble-img" src="https://api.dicebear.com/7.x/bottts/svg?seed=guest" class="w-full h-full rounded-full object-cover pointer-events-none">
+            <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center border border-slate-900 shadow pointer-events-none">
+                <i class="fa-solid fa-bolt text-xs text-white" id="fab-main-icon"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Container -->
+    <div id="creator-modal" class="fixed inset-0 z-[10000] glass flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 relative shadow-2xl max-h-[90vh] overflow-y-auto">
+            <button onclick="closeCreatorPopup()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <div id="modal-content"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = JSON.parse(localStorage.getItem('origin_user')) || null;
+        let followedUsers = JSON.parse(localStorage.getItem('origin_followed')) || [];
+        let allSystemUsers = [];
+        let isDragging = false;
+        let startX, startY, fabOpen = false;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderNav();
+            loadPosts();
+            fetchUsers();
+            setupDraggableBubble();
+        });
+
+        async function fetchUsers() {
+            try {
+                const res = await fetch('/api/users');
+                const data = await res.json();
+                allSystemUsers = data.users || [];
+            } catch (e) { console.error(e); }
+        }
+
+        function setupDraggableBubble() {
+            const el = document.getElementById('floating-profile');
+            const btn = document.getElementById('bubble-btn');
+            let currentX = 0, currentY = 0;
+
+            const dragStart = (e) => {
+                isDragging = false;
+                const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+                startX = clientX - currentX;
+                startY = clientY - currentY;
+
+                document.addEventListener('mousemove', drag);
+                document.addEventListener('touchmove', drag, { passive: false });
+                document.addEventListener('mouseup', dragEnd);
+                document.addEventListener('touchend', dragEnd);
+            };
+
+            const drag = (e) => {
+                const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+                let dx = clientX - startX;
+                let dy = clientY - startY;
+                if (Math.abs(dx - currentX) > 4 || Math.abs(dy - currentY) > 4) isDragging = true;
+                currentX = dx;
+                currentY = dy;
+                el.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
+            };
+
+            const dragEnd = () => {
+                document.removeEventListener('mousemove', drag);
+                document.removeEventListener('touchmove', drag);
+                document.removeEventListener('mouseup', dragEnd);
+                document.removeEventListener('touchend', dragEnd);
+            };
+
+            btn.addEventListener('mousedown', dragStart);
+            btn.addEventListener('touchstart', dragStart, { passive: false });
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (!isDragging) toggleFabMenu();
+            });
+        }
+
+        function toggleFabMenu() {
+            fabOpen = !fabOpen;
+            const menu = document.getElementById('fab-menu');
+            const icon = document.getElementById('fab-main-icon');
+            if (fabOpen) {
+                menu.classList.add('active');
+                icon.className = 'fa-solid fa-xmark text-xs text-white';
+            } else {
+                menu.classList.remove('active');
+                icon.className = 'fa-solid fa-bolt text-xs text-white';
+            }
+        }
+
+        async function loadPosts() {
+            const container = document.getElementById('posts-feed');
+            try {
+                const res = await fetch('/api/posts');
+                const data = await res.json();
+                if (!data.posts || data.posts.length === 0) {
+                    container.innerHTML = `<div class="text-center py-12 text-slate-500"><i class="fa-solid fa-folder-open text-3xl mb-2"></i><p class="text-sm">ยังไม่มีผลงานต้นฉบับในระบบ</p></div>`;
+                    return;
+                }
+                container.innerHTML = data.posts.map(post => {
+                    const isFollowing = followedUsers.includes(post.user_id);
+                    return `
+                    <div class="glass rounded-2xl overflow-hidden border border-slate-800 shadow-xl relative">
+                        <div class="p-4 flex items-center justify-between border-b border-slate-800/50">
+                            <div class="flex items-center gap-3">
+                                <img src="${post.author_avatar}" class="w-10 h-10 rounded-full border border-cyan-500/30 object-cover">
+                                <div>
+                                    <h4 class="font-bold text-slate-200 text-sm flex items-center gap-1">${post.author_name} <i class="fa-solid fa-circle-check text-cyan-400 text-xs"></i></h4>
+                                    <p class="text-[11px] font-mono text-cyan-400">${post.creator_id}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button onclick="toggleFollow(${post.user_id})" class="text-xs px-3 py-1 rounded-full font-semibold border transition ${isFollowing ? 'bg-slate-800 border-slate-600 text-slate-300' : 'bg-cyan-500/10 border-cyan-500 text-cyan-400 hover:bg-cyan-500 hover:text-white'}">
+                                    ${isFollowing ? '<i class="fa-solid fa-check mr-1"></i>ติดตามแล้ว' : '<i class="fa-solid fa-user-plus mr-1"></i>ติดตาม'}
+                                </button>
+                                <span class="text-[10px] bg-indigo-950 text-indigo-300 border border-indigo-800 px-2 py-1 rounded-md font-mono">${post.license}</span>
+                            </div>
+                        </div>
+                        <div class="p-4 text-slate-300 text-sm whitespace-pre-line">${post.content}</div>
+                        ${post.media_url ? `
+                            <div class="relative bg-black overflow-hidden flex items-center justify-center max-h-[450px]">
+                                ${post.media_type === 'video' ? `<video src="${post.media_url}" controls class="w-full max-h-[450px] object-contain"></video>` : `<img src="${post.media_url}" class="w-full object-cover">`}
+                                <div class="watermark-overlay"></div>
+                                <div class="absolute bottom-2 right-2 glass px-2 py-1 rounded text-[9px] font-mono text-slate-400">HASH: ${post.hash}</div>
+                            </div>
+                        ` : ''}
+                        <div class="p-3 bg-slate-900/40 border-t border-slate-800/50 flex items-center justify-between text-xs text-slate-400">
+                            <button onclick="likePost(${post.id})" class="flex items-center gap-1.5 hover:text-rose-400"><i class="fa-solid fa-heart text-rose-500"></i> <span>${post.likes_count} ไลค์</span></button>
+                            <button onclick="tipPost(${post.id})" class="flex items-center gap-1.5 hover:text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20"><i class="fa-solid fa-coins text-amber-400"></i> <span class="text-amber-300 font-bold">ให้เหรียญ (${post.coins_received})</span></button>
+                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-comment text-indigo-400"></i> <span>${post.comments_count} ความคิดเห็น</span></span>
+                            <button onclick="sharePost('${post.hash}')" class="flex items-center gap-1.5 hover:text-cyan-400"><i class="fa-solid fa-share-nodes text-cyan-400"></i> <span>แชร์</span></button>
+                        </div>
+                        <div class="p-3 border-t border-slate-800/40 bg-slate-950/30 flex gap-2">
+                            <input type="text" id="comment-input-${post.id}" placeholder="แสดงความคิดเห็น..." class="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-cyan-500">
+                            <button onclick="sendComment(${post.id})" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded-lg text-xs font-bold text-white">ส่ง</button>
+                        </div>
+                    </div>
+                `}).join('');
+            } catch (err) { console.error(err); }
+        }
+
+        // ฟังก์ชันที่ 1: โพสต์
+        function openPostModal() {
+            if (fabOpen) toggleFabMenu();
+            if (!currentUser) return openRegisterModal();
+            const modal = document.getElementById('creator-modal');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+
+            content.innerHTML = `
+                <div class="flex items-center gap-3 mb-4">
+                    <img src="${currentUser.avatar}" class="w-12 h-12 rounded-full border border-cyan-400 object-cover">
+                    <div>
+                        <h3 class="font-bold text-slate-200">${currentUser.name}</h3>
+                        <p class="text-xs text-cyan-400 font-mono">${currentUser.creator_id} | 🪙 ${currentUser.coins} เหรียญ</p>
+                    </div>
+                </div>
+                <form onsubmit="submitPost(event)" class="space-y-4">
+                    <textarea id="post-text" placeholder="สร้างสรรค์ข้อความคุ้มครองลิขสิทธิ์..." class="w-full h-24 bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-cyan-500" required></textarea>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">อัปโหลดสื่อ (ภาพหรือวิดีโอ):</label>
+                        <input type="file" id="post-media" accept="image/*,video/*" class="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">ประเภทลิขสิทธิ์:</label>
+                        <select id="post-license" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs">
+                            <option value="All Rights Reserved">สงวนลิขสิทธิ์ทั้งหมด (All Rights Reserved)</option>
+                            <option value="CC BY-NC">อนุญาตเผยแพร่แบบอ้างอิง (ห้ามใช้เพื่อการค้า)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full bg-gradient-to-r from-cyan-500 to-indigo-600 font-bold py-2.5 rounded-lg text-sm text-white shadow-lg"><i class="fa-solid fa-shield-cat mr-1"></i> โพสต์พร้อมประทับตราลิขสิทธิ์</button>
+                </form>
+            `;
+        }
+
+        // ฟังก์ชันที่ 2: แชทเพื่อนที่ติดตาม (พร้อมรายชื่อ, รูปโปรไฟล์, แชทข้อความ/เสียง/รูป/วิดีโอ และปุ่มโทร/กล้อง)
+        async function openChatModal() {
+            if (fabOpen) toggleFabMenu();
+            if (!currentUser) return openRegisterModal();
+            await fetchUsers();
+
+            const modal = document.getElementById('creator-modal');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+
+            const friends = allSystemUsers.filter(u => followedUsers.includes(u.id) && u.id !== currentUser.id);
+
+            content.innerHTML = `
+                <h3 class="text-lg font-bold mb-2 text-cyan-400"><i class="fa-solid fa-comments mr-2"></i>แชทกับเพื่อนที่ติดตาม</h3>
+                <div class="text-xs text-slate-400 mb-3">รายชื่อเพื่อนที่คุณกดติดตามไว้ (${friends.length} คน)</div>
+                <div class="space-y-2 max-h-60 overflow-y-auto" id="friend-list-container">
+                    ${friends.length === 0 ? '<div class="text-center py-8 text-slate-500 text-xs">ยังไม่ได้ติดตามผู้ใช้คนอื่น กดติดตามที่โพสต์เพื่อเพิ่มเพื่อนแชท</div>' :
+                      friends.map(f => `
+                        <div class="p-2.5 bg-slate-950 rounded-xl border border-slate-800 flex justify-between items-center hover:border-cyan-500/50 transition">
+                            <div class="flex items-center gap-3">
+                                <img src="${f.avatar}" class="w-10 h-10 rounded-full border border-cyan-400 object-cover">
+                                <div>
+                                    <div class="font-bold text-slate-200 text-sm">${f.name}</div>
+                                    <div class="text-[10px] text-cyan-400 font-mono">${f.creator_id}</div>
+                                </div>
+                            </div>
+                            <button onclick="openChatRoom(${f.id}, '${f.name}', '${f.avatar}')" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded-lg text-xs font-bold text-white flex items-center gap-1.5">
+                                <i class="fa-solid fa-comment-dots"></i> แชท
+                            </button>
+                        </div>
+                      `).join('')}
+                </div>
+            `;
+        }
+
+        async function openChatRoom(friendId, friendName, friendAvatar) {
+            const content = document.getElementById('modal-content');
+            
+            // ดึงข้อความแชทเก่า
+            let chatMessages = [];
+            try {
+                const res = await fetch(`/api/chat/${currentUser.id}/${friendId}`);
+                const data = await res.json();
+                chatMessages = data.chats || [];
+            } catch(e) {}
+
+            content.innerHTML = `
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+                    <div class="flex items-center gap-3">
+                        <img src="${friendAvatar}" class="w-10 h-10 rounded-full border border-cyan-400 object-cover">
+                        <div>
+                            <h4 class="font-bold text-slate-200 text-sm">${friendName}</h4>
+                            <p class="text-[10px] text-emerald-400 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span> ออนไลน์</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="startCall('${friendName}', false)" class="w-9 h-9 rounded-full bg-slate-800 hover:bg-cyan-600 text-cyan-400 hover:text-white flex items-center justify-center transition" title="โทรด้วยเสียง"><i class="fa-solid fa-phone"></i></button>
+                        <button onclick="startCall('${friendName}', true)" class="w-9 h-9 rounded-full bg-slate-800 hover:bg-indigo-600 text-indigo-400 hover:text-white flex items-center justify-center transition" title="วิดีโอคอล"><i class="fa-solid fa-video"></i></button>
+                        <button onclick="openChatModal()" class="w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></button>
+                    </div>
+                </div>
+
+                <div id="call-box" class="hidden mb-3 p-4 bg-slate-950 rounded-2xl border border-cyan-500/40 text-center space-y-3 relative overflow-hidden">
+                    <div id="call-status" class="text-xs text-cyan-300 font-bold animate-pulse">กำลังโทรหา ${friendName}...</div>
+                    <div class="w-24 h-24 mx-auto rounded-full bg-slate-900 border-2 border-indigo-500 flex items-center justify-center overflow-hidden relative">
+                        <img src="${friendAvatar}" class="w-full h-full object-cover">
+                        <video id="webcam-view" autoplay playsinline class="absolute inset-0 w-full h-full object-cover hidden"></video>
+                    </div>
+                    <div class="flex justify-center gap-4 pt-2">
+                        <button id="btn-toggle-cam" onclick="toggleCamera()" class="w-10 h-10 rounded-full bg-slate-800 text-slate-300 hover:bg-slate-700 hidden"><i class="fa-solid fa-camera"></i></button>
+                        <button onclick="endCall()" class="px-4 py-1.5 rounded-full bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold"><i class="fa-solid fa-phone-slash mr-1"></i> วางสาย</button>
+                    </div>
+                </div>
+
+                <div id="chat-messages-box" class="h-64 bg-slate-950 border border-slate-800 rounded-xl p-3 overflow-y-auto mb-3 space-y-3 flex flex-col">
+                    ${chatMessages.length === 0 ? '<div class="text-center my-auto text-slate-500 text-xs">ยังไม่มีประวัติการสนทนา เริ่มส่งข้อความหากันได้เลย</div>' : 
+                      chatMessages.map(m => {
+                          const isMe = m.senderId === currentUser.id;
+                          return `
+                            <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
+                                <div class="max-w-[75%] p-2.5 rounded-2xl text-xs ${isMe ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-slate-800 text-slate-200 rounded-bl-none'}">
+                                    ${m.text ? `<div>${m.text}</div>` : ''}
+                                    ${m.mediaUrl ? (m.mediaType === 'video' ? `<video src="${m.mediaUrl}" controls class="max-w-full rounded mt-1 max-h-40"></video>` : `<img src="${m.mediaUrl}" class="max-w-full rounded mt-1 max-h-40">`) : ''}
+                                </div>
+                            </div>
+                          `;
+                      }).join('')}
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl text-xs flex items-center justify-center">
+                        <i class="fa-solid fa-paperclip"></i>
+                        <input type="file" id="chat-file" accept="image/*,video/*,audio/*" class="hidden" onchange="previewChatFile(this)">
+                    </label>
+                    <input type="text" id="chat-text-input" placeholder="พิมพ์ข้อความ..." class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-cyan-500">
+                    <button onclick="sendChatMessage(${friendId})" class="bg-gradient-to-r from-cyan-500 to-indigo-600 px-4 py-2 rounded-xl text-xs font-bold text-white shadow"><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+                <div id="file-preview-label" class="text-[10px] text-cyan-400 mt-1 hidden"></div>
+            `;
+            const box = document.getElementById('chat-messages-box');
+            box.scrollTop = box.scrollHeight;
+        }
+
+        let activeStream = null;
+        function startCall(friendName, withVideo) {
+            const box = document.getElementById('call-box');
+            box.classList.remove('hidden');
+            document.getElementById('call-status').innerText = withVideo ? `กำลังวิดีโอคอลกับ ${friendName}...` : `กำลังโทรเสียงกับ ${friendName}...`;
+            
+            const camBtn = document.getElementById('btn-toggle-cam');
+            if (withVideo) {
+                camBtn.classList.remove('hidden');
+                navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
+                    activeStream = stream;
+                    const videoEl = document.getElementById('webcam-view');
+                    videoEl.srcObject = stream;
+                    videoEl.classList.remove('hidden');
+                }).catch(err => {
+                    alert('ไม่สามารถเปิดกล้องได้: ' + err.message);
+                });
+            } else {
+                camBtn.classList.add('hidden');
+            }
+        }
+
+        function toggleCamera() {
+            if (activeStream) {
+                const videoTrack = activeStream.getVideoTracks()[0];
+                if (videoTrack) videoTrack.enabled = !videoTrack.enabled;
+            }
+        }
+
+        function endCall() {
+            if (activeStream) {
+                activeStream.getTracks().forEach(track => track.stop());
+                activeStream = null;
+            }
+            document.getElementById('call-box').classList.add('hidden');
+            document.getElementById('webcam-view').classList.add('hidden');
+        }
+
+        function previewChatFile(input) {
+            if (input.files && input.files[0]) {
+                document.getElementById('file-preview-label').innerText = `แนบไฟล์แล้ว: ${input.files[0].name}`;
+                document.getElementById('file-preview-label').classList.remove('hidden');
+            }
+        }
+
+        async function sendChatMessage(friendId) {
+            const textInput = document.getElementById('chat-text-input');
+            const fileInput = document.getElementById('chat-file');
+            if (!textInput.value && (!fileInput.files || !fileInput.files[0])) return;
+
+            const formData = new FormData();
+            formData.append('senderId', currentUser.id);
+            formData.append('receiverId', friendId);
+            formData.append('text', textInput.value);
+            if (fileInput.files[0]) formData.append('media', fileInput.files[0]);
+
+            await fetch('/api/chat', { method: 'POST', body: formData });
+            openChatRoom(friendId, '', '');
+        }
+
+        // ฟังก์ชันที่ 3: กระเป๋าเงิน & เถิมเงิน/ถอนเงิน
+        function openWalletModal() {
+            if (fabOpen) toggleFabMenu();
+            if (!currentUser) return openRegisterModal();
+            const modal = document.getElementById('creator-modal');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+
+            content.innerHTML = `
+                <h3 class="text-lg font-bold mb-3 text-cyan-400"><i class="fa-solid fa-wallet mr-2"></i>กระเป๋าเงินเหรียญ PDP</h3>
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-4 text-center">
+                    <div class="text-xs text-slate-400">ยอดเหรียญคงเหลือ</div>
+                    <div class="text-2xl font-bold text-amber-400 mt-1">🪙 ${currentUser.coins} PDP</div>
+                </div>
+                <div class="space-y-4">
+                    <div class="p-3 bg-slate-800/50 rounded-xl border border-slate-700/50 space-y-2">
+                        <h4 class="text-xs font-bold text-cyan-300">เติมเหรียญ (2 เหรียญ = 1 บาท)</h4>
+                        <input type="number" id="topup-coins" value="20" oninput="calculateTHB()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs">
+                        <div class="text-xs text-amber-300 font-bold" id="thb-display">ต้องชำระเงิน: 10 บาทไทย</div>
+                        <button onclick="showQRCode()" class="w-full bg-emerald-600 hover:bg-emerald-500 font-bold py-2 rounded-lg text-xs text-white">รับ QR สแกนจ่าย</button>
+                    </div>
+                    <div id="qr-container" class="hidden text-center p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+                        <div class="text-xs text-slate-300 font-bold">สแกน QR Code โอนเงิน</div>
+                        <div class="w-32 h-32 mx-auto bg-white p-2 rounded flex items-center justify-center"><i class="fa-solid fa-qrcode text-6xl text-slate-900"></i></div>
+                        <input type="file" id="topup-slip" accept="image/*" class="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-indigo-600 file:text-white">
+                        <button onclick="submitTopupWithSlip()" class="w-full bg-gradient-to-r from-cyan-500 to-indigo-600 font-bold py-2 rounded-lg text-xs text-white">ยืนยันสลิป (เข้ากระเป๋าใน 30 วิ)</button>
+                    </div>
+                    <div class="p-3 bg-slate-800/50 rounded-xl border border-slate-700/50 space-y-2">
+                        <h4 class="text-xs font-bold text-rose-300">แลกเหรียญเป็นเงินสด (ขั้นต่ำ 20 เหรียญ)</h4>
+                        <button onclick="withdrawCoins()" class="w-full bg-rose-600 hover:bg-rose-500 font-bold py-2 rounded-lg text-xs text-white">ถอนเงินเข้าบัญชีธนาคาร</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function calculateTHB() {
+            const coins = parseInt(document.getElementById('topup-coins').value) || 0;
+            document.getElementById('thb-display').innerText = `ต้องชำระเงิน: ${coins / 2} บาทไทย`;
+        }
+        function showQRCode() { document.getElementById('qr-container').classList.remove('hidden'); }
+
+        async function submitTopupWithSlip() {
+            const coins = document.getElementById('topup-coins').value;
+            const slipFile = document.getElementById('topup-slip').files[0];
+            const formData = new FormData();
+            formData.append('userId', currentUser.id);
+            formData.append('coins', coins);
+            if (slipFile) formData.append('slip', slipFile);
+
+            const res = await fetch('/api/topup', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.success) {
+                alert('ระบบได้รับสลิปแล้ว รอตรวจสอบ 30 วินาที...');
+                setTimeout(() => {
+                    currentUser.coins += parseInt(coins);
+                    localStorage.setItem('origin_user', JSON.stringify(currentUser));
+                    renderNav();
+                    closeCreatorPopup();
+                    alert('เติมเหรียญสำเร็จ!');
+                }, 3000);
+            }
+        }
+
+        async function withdrawCoins() {
+            if (currentUser.coins < 20) return alert('ยอดเหรียญไม่พอ (ถอนขั้นต่ำ 20 เหรียญ)');
+            if (!currentUser.bankAccount) return alert('กรุณาใส่เลขบัญชีธนาคารในเมนูโปรไฟล์ก่อนถอน');
+            const amount = prompt('กรอกจำนวนเหรียญที่ต้องการถอน:', '20');
+            if (!amount || parseInt(amount) < 20) return alert('ถอนขั้นต่ำ 20 เหรียญขึ้นไป');
+            currentUser.coins -= parseInt(amount);
+            localStorage.setItem('origin_user', JSON.stringify(currentUser));
+            renderNav();
+            closeCreatorPopup();
+            alert(`ถอนสำเร็จ ${amount} เหรียญ เข้าบัญชี ${currentUser.bankAccount}`);
+        }
+
+        // ฟังก์ชันที่ 4: โปรไฟล์ส่วนตัว
+        function openProfileModal() {
+            if (fabOpen) toggleFabMenu();
+            if (!currentUser) return openRegisterModal();
+            const modal = document.getElementById('creator-modal');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+
+            content.innerHTML = `
+                <h3 class="text-lg font-bold mb-3 text-cyan-400"><i class="fa-solid fa-user-gear mr-2"></i>โปรไฟล์ & ตั้งค่าส่วนตัว</h3>
+                <form onsubmit="updateProfile(event)" class="space-y-3">
+                    <div class="flex items-center gap-3">
+                        <img src="${currentUser.avatar}" class="w-14 h-14 rounded-full border border-cyan-400 object-cover">
+                        <div class="flex-1">
+                            <label class="block text-[11px] text-slate-400 mb-1">เปลี่ยนรูปโปรไฟล์:</label>
+                            <input type="file" id="edit-avatar" accept="image/*" class="w-full text-xs text-slate-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-indigo-600 file:text-white">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-slate-400 mb-1">ชื่อ - นามสกุล:</label>
+                        <input type="text" id="edit-name" value="${currentUser.name || ''}" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs" required>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-slate-400 mb-1">อีเมล:</label>
+                        <input type="email" id="edit-email" value="${currentUser.email || ''}" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-slate-400 mb-1">เบอร์โทรศัพท์:</label>
+                        <input type="text" id="edit-phone" value="${currentUser.phone || ''}" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-slate-400 mb-1">เลขบัญชีธนาคาร (สำหรับรับเงินถอน):</label>
+                        <input type="text" id="edit-bank" value="${currentUser.bankAccount || ''}" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs">
+                    </div>
+                    <button type="submit" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 font-bold py-2.5 rounded-lg text-xs text-white shadow-lg">บันทึกข้อมูลส่วนตัว</button>
+                </form>
+            `;
+        }
+
+        async function updateProfile(e) {
+            e.preventDefault();
+            currentUser.name = document.getElementById('edit-name').value;
+            currentUser.email = document.getElementById('edit-email').value;
+            currentUser.phone = document.getElementById('edit-phone').value;
+            currentUser.bankAccount = document.getElementById('edit-bank').value;
+            const avatarInput = document.getElementById('edit-avatar');
+            if (avatarInput.files && avatarInput.files[0]) {
+                currentUser.avatar = await convertFileToBase64(avatarInput.files[0]);
+            }
+            localStorage.setItem('origin_user', JSON.stringify(currentUser));
+            renderNav();
+            closeCreatorPopup();
+            alert('อัปเดตโปรไฟล์เรียบร้อย!');
+        }
+
+        function openRegisterModal() {
+            const modal = document.getElementById('creator-modal');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+
+            content.innerHTML = `
+                <h3 class="text-xl font-bold mb-2 text-cyan-400">สมัครสมาชิก / เข้าสู่ระบบ</h3>
+                <div class="space-y-3">
+                    <div><label class="block text-xs text-slate-400 mb-1">ชื่อ - นามสกุล:</label><input type="text" id="reg-name" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm"></div>
+                    <div><label class="block text-xs text-slate-400 mb-1">Username:</label><input type="text" id="reg-username" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm"></div>
+                    <div><label class="block text-xs text-slate-400 mb-1">รูปโปรไฟล์:</label><input type="file" id="reg-avatar" accept="image/*" class="w-full text-xs text-slate-400 file:bg-indigo-600 file:text-white file:border-0 file:py-1 file:px-3 file:rounded"></div>
+                    <button onclick="register()" class="w-full bg-gradient-to-r from-cyan-500 to-indigo-600 font-bold py-2.5 rounded-lg text-sm text-white shadow-lg">ยืนยันสมัครสมาชิก</button>
+                </div>
+            `;
+        }
+
+        async function register() {
+            const name = document.getElementById('reg-name').value;
+            const username = document.getElementById('reg-username').value;
+            const avatarInput = document.getElementById('reg-avatar');
+            if (!name || !username) return alert('กรุณากรอกข้อมูลให้ครบ');
+            let customAvatar = null;
+            if (avatarInput.files && avatarInput.files[0]) customAvatar = await convertFileToBase64(avatarInput.files[0]);
+
+            const res = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, username, avatar: customAvatar })
+            });
+            const data = await res.json();
+            if (data.success) {
+                currentUser = data.user;
+                if (customAvatar) currentUser.avatar = customAvatar;
+                localStorage.setItem('origin_user', JSON.stringify(currentUser));
+                renderNav();
+                closeCreatorPopup();
+                fetchUsers();
+                alert('สมัครสำเร็จ!');
+            }
+        }
+
+        function convertFileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = err => reject(err);
+            });
+        }
+
+        function renderNav() {
+            const nav = document.getElementById('nav-user-area');
+            const bubbleImg = document.getElementById('bubble-img');
+            if (currentUser && currentUser.avatar) {
+                bubbleImg.src = currentUser.avatar;
+                nav.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <img src="${currentUser.avatar}" class="w-8 h-8 rounded-full border border-cyan-400 object-cover">
+                        <div class="text-right hidden sm:block">
+                            <div class="text-xs font-bold text-slate-200">${currentUser.name}</div>
+                            <div class="text-[10px] text-amber-400 font-bold">🪙 ${currentUser.coins} เหรียญ</div>
+                        </div>
+                    </div>
+                    <button onclick="logout()" class="text-xs bg-slate-800 text-slate-400 px-2.5 py-1.5 rounded-lg">ออก</button>
+                `;
+            } else {
+                bubbleImg.src = 'https://api.dicebear.com/7.x/bottts/svg?seed=guest';
+                nav.innerHTML = `<button onclick="openRegisterModal()" class="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-bold">สมัครสมาชิก</button>`;
+            }
+        }
+
+        async function submitPost(e) {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append('userId', currentUser.id);
+            formData.append('content', document.getElementById('post-text').value);
+            formData.append('license', document.getElementById('post-license').value);
+            const fileInput = document.getElementById('post-media');
+            if (fileInput.files[0]) formData.append('media', fileInput.files[0]);
+
+            const res = await fetch('/api/posts', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.success) {
+                closeCreatorPopup();
+                loadPosts();
+                alert('โพสต์ผลงานสำเร็จ! รหัสตราลิขสิทธิ์: ' + data.hash);
+            }
+        }
+
+        async function likePost(id) {
+            await fetch(`/api/posts/${id}/like`, { method: 'POST' });
+            loadPosts();
+        }
+
+        async function tipPost(id) {
+            if (!currentUser) return openRegisterModal();
+            const amount = prompt('กรอกจำนวนเหรียญที่ต้องการมอบ:', '10');
+            if (!amount) return;
+            const res = await fetch(`/api/posts/${id}/tip`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ senderId: currentUser.id, amount: parseInt(amount) })
+            });
+            const data = await res.json();
+            if (data.success) {
+                currentUser.coins -= parseInt(amount);
+                localStorage.setItem('origin_user', JSON.stringify(currentUser));
+                renderNav();
+                loadPosts();
+                alert(data.message);
+            } else { alert(data.error); }
+        }
+
+        async function sendComment(postId) {
+            const input = document.getElementById(`comment-input-${postId}`);
+            if (!input.value) return;
+            await fetch(`/api/posts/${postId}/comments`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: input.value })
+            });
+            input.value = '';
+            loadPosts();
+        }
+
+        function toggleFollow(userId) {
+            if (!currentUser) return openRegisterModal();
+            if (currentUser.id === userId) return alert('ไม่สามารถติดตามตัวเองได้');
+            const index = followedUsers.indexOf(userId);
+            if (index > -1) followedUsers.splice(index, 1);
+            else followedUsers.push(userId);
+            localStorage.setItem('origin_followed', JSON.stringify(followedUsers));
+            loadPosts();
+            alert('อัปเดตการติดตามเรียบร้อย');
+        }
+
+        function sharePost(hash) {
+            navigator.clipboard?.writeText(hash);
+            alert('คัดลอกรหัสตราลิขสิทธิ์แล้ว: ' + hash);
+        }
+
+        function closeCreatorPopup() { document.getElementById('creator-modal').classList.add('hidden'); }
+        function logout() { localStorage.removeItem('origin_user'); currentUser = null; location.reload(); }
+    </script>
+</body>
+</html>
