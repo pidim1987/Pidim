@@ -16,7 +16,7 @@ const pool = new Pool({
     }
 });
 
-// ฟังก์ชันสร้างตารางในฐานข้อมูลอัตโนมัติเมื่อเปิดเซิร์ฟเวอร์
+// ฟังก์ชันสร้างตารางในฐานข้อมูลอัตโนมัติเมื่อเปิดเซิร์ฟเวอร์ (รองรับ KYC และ Comments เต็มรูปแบบ)
 async function initDB() {
     try {
         await pool.query(`
@@ -30,6 +30,9 @@ async function initDB() {
                 email VARCHAR(255) DEFAULT '',
                 phone VARCHAR(50) DEFAULT '',
                 bank_account VARCHAR(100) DEFAULT '',
+                real_name VARCHAR(255) DEFAULT '',
+                real_surname VARCHAR(255) DEFAULT '',
+                id_card VARCHAR(13) DEFAULT '',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
 
@@ -52,6 +55,14 @@ async function initDB() {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
 
+            CREATE TABLE IF NOT EXISTS comments (
+                id SERIAL PRIMARY KEY,
+                post_id INTEGER REFERENCES posts(id) ON DELETE CASCADE,
+                author_name VARCHAR(255),
+                text TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
             CREATE TABLE IF NOT EXISTS chats (
                 id SERIAL PRIMARY KEY,
                 sender_id INTEGER REFERENCES users(id),
@@ -62,7 +73,7 @@ async function initDB() {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
-        console.log("🚀 Database tables initialized successfully!");
+        console.log("🚀 Database tables initialized successfully with KYC & Comments support!");
     } catch (err) {
         console.error("❌ Error initializing database tables:", err);
     }
@@ -154,9 +165,9 @@ app.get('/api/users', async (req, res) => {
     }
 });
 
-// API: อัปเดตข้อมูลโปรไฟล์
+// API: อัปเดตข้อมูลโปรไฟล์และยืนยันตัวตน (KYC)
 app.post('/api/profile/update', async (req, res) => {
-    const { userId, name, email, phone, bankAccount, avatar } = req.body;
+    const { userId, name, email, phone, bankAccount, avatar, realName, realSurname, idCard } = req.body;
     try {
         const userCheck = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
         if (userCheck.rows.length === 0) return res.status(404).json({ error: 'ไม่พบผู้ใช้งาน' });
@@ -167,11 +178,15 @@ app.post('/api/profile/update', async (req, res) => {
         const updatedPhone = phone !== undefined ? phone : currentUser.phone;
         const updatedBank = bankAccount !== undefined ? bankAccount : currentUser.bank_account;
         const updatedAvatar = avatar || currentUser.avatar;
+        const updatedRealName = realName !== undefined ? realName : currentUser.real_name;
+        const updatedRealSurname = realSurname !== undefined ? realSurname : currentUser.real_surname;
+        const updatedIdCard = idCard !== undefined ? idCard : currentUser.id_card;
 
         const updateResult = await pool.query(
-            `UPDATE users SET name = $1, email = $2, phone = $3, bank_account = $4, avatar = $5 
-             WHERE id = $6 RETURNING *`,
-            [updatedName, updatedEmail, updatedPhone, updatedBank, updatedAvatar, userId]
+            `UPDATE users SET name = $1, email = $2, phone = $3, bank_account = $4, avatar = $5,
+             real_name = $6, real_surname = $7, id_card = $8 
+             WHERE id = $9 RETURNING *`,
+            [updatedName, updatedEmail, updatedPhone, updatedBank, updatedAvatar, updatedRealName, updatedRealSurname, updatedIdCard, userId]
         );
 
         res.json({ success: true, message: 'อัปเดตข้อมูลสำเร็จ', user: updateResult.rows[0] });
@@ -345,12 +360,36 @@ app.post('/api/posts/:id/tip', async (req, res) => {
     }
 });
 
-app.post('/api/posts/:id/comments', async (req, res) => {
+// API: ดึงรายการความคิดเห็นของโพสต์
+app.get('/api/posts/:id/comments', async (req, res) => {
+    const postId = parseInt(req.params.id);
     try {
         const result = await pool.query(
-            'UPDATE posts SET comments_count = comments_count + 1 WHERE id = $1 RETURNING comments_count',
-            [parseInt(req.params.id)]
+            'SELECT id, author_name as "author_name", text, created_at FROM comments WHERE post_id = $1 ORDER BY created_at ASC',
+            [postId]
         );
+        res.json({ comments: result.rows });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// API: เพิ่มความคิดเห็นใหม่ลงในตาราง comments พร้อมอัปเดตจำนวนนับ
+app.post('/api/posts/:id/comments', async (req, res) => {
+    const postId = parseInt(req.params.id);
+    const { text, authorName } = req.body;
+    try {
+        await pool.query(
+            'INSERT INTO comments (post_id, author_name, text) VALUES ($1, $2, $3)',
+            [postId, authorName || 'ผู้ใช้งาน', text]
+        );
+
+        const result = await pool.query(
+            'UPDATE posts SET comments_count = comments_count + 1 WHERE id = $1 RETURNING comments_count',
+            [postId]
+        );
+
         if (result.rows.length === 0) return res.status(404).json({ error: 'ไม่พบโพสต์' });
         res.json({ success: true, comments_count: result.rows[0].comments_count });
     } catch (err) {
@@ -362,4 +401,3 @@ app.post('/api/posts/:id/comments', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`🚀 Server is running on port ${PORT}`);
 });
-
