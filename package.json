@@ -1,9 +1,17 @@
 {
+<<<<<<< HEAD
   "name": "my-origin-app",
+=======
+  "name": "origin",
+>>>>>>> 0b3e87ee79934a04cd72af22de57b16f6f82c364
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
+<<<<<<< HEAD
+=======
+    "start": "node server.js",
+>>>>>>> 0b3e87ee79934a04cd72af22de57b16f6f82c364
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -12,7 +20,14 @@
   "type": "commonjs",
   "dependencies": {
     "express": "^5.2.1",
+<<<<<<< HEAD
     "multer": "^2.3.0",
     "pg": "^8.23.0"
   }
 }
+=======
+    "multer": "^2.3.0"
+  }
+}
+
+>>>>>>> 0b3e87ee79934a04cd72af22de57b16f6f82c364
